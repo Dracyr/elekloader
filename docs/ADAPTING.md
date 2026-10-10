@@ -932,6 +932,57 @@ glide with it.
 With no handler each site costs a test and a jump: the stock call runs as
 it was, by a tail jump with the stack as it came.
 
+### Step-fire events (seq-events, Digitone mk1)
+
+Mods that change what the sequencer plays (rhythm and melody generators,
+performance effects) need the same instructions of the step fire, and two
+mods may not patch one site. The `seq-events` mod (`mods/seq-events-dn1`)
+owns the fire's sites, audio and MIDI tracks, once, and offers each stage of
+it as tables mods subscribe to. The names are one set for every device
+seq-events serves (`seq-events.h`); a mod includes its device's header,
+`digitone-mk1/seq.h`, which gives the sizes and includes it (the Digitakt
+mk1's is being added). Every handler runs at interrupt level, in the fire:
+keep it short and call no firmware. `track` counts the audio tracks first
+(`SQ_AUDIO`: on the Digitone 0-3, its synth tracks), then the MIDI tracks
+(`SQ_TRACKS` in all: 4-7).
+
+| event | prototype | |
+|---|---|---|
+| `ev_fire_step` | `int32_t f(int32_t track, int32_t step, int32_t len)` | the step the fire reads: return it; one outside 0..len-1 is ignored |
+| `ev_gen_trig` | `void f(int32_t track, int32_t step, int32_t first, uint32_t *trig)` | does the step fire, `*trig` `SQ_TRIG` (note trig) and `SQ_LOCK` (lock trig), the stored step's to start with |
+| `ev_fire_trig` | the same | every track, after every `ev_gen_trig` handler |
+| `ev_fire_cond` | `void f(int32_t track, int32_t step, int32_t *pass)` | a trig condition's or probability's outcome: 1, 0, or -1 the probability decides |
+| `ev_gen_notes` | `void f(int32_t track, int32_t step, int32_t generated, int8_t notes[SQ_NOTES])` | the notes a fired note trig plays; `notes[0]` the note (-1 none), the rest intervals added to it (a chord; `SQ_NOTES` 8 on the Digitone); the stored notes to start with, or the track's NOTE for a `generated` trig (it fires with no stored note trig) |
+| `ev_fire_notes` | `void f(int32_t track, int32_t step, int8_t notes[SQ_NOTES])` | every track, after every `ev_gen_notes` handler |
+| `ev_fire_vel` | `void f(int32_t track, int32_t step, int32_t *vel)` | the velocity, 0-127 |
+| `ev_fire_locks` | `int32_t f(int32_t track, int32_t step, struct sq_lock *out, int32_t room)` | audio tracks: write up to `room` parameter locks (a sound slot below `SQ_SLOTS`, 79 on the Digitone, and its 8.8 value) and return how many |
+
+A stage with two phases runs every generator (`ev_gen_`: what the step is)
+before every effect (`ev_fire_`: what is done to it), whatever their
+`order`, which sorts handlers within a phase. Each handler changes in place
+what the one before left, the first what the stock step made, and
+seq-events checks the value after each (bits masked, the step's range, the
+velocity clamped, lock slots). `first` is 1 at the trig test's read of the
+step, 0 at the fire's second read: both reads must get the same answer.
+
+Beside the events, seq-events keeps a step clock per track (`sq_clock`: the
+last real step the fire loaded, and a parity that flips on each wrap), reads
+a track's facts when asked, from the pattern a fire reads (`sq_track_info`:
+its length, the master length, NOTE, the keyboard's ROOT and SCALE;
+`sq_stored`: its stored note trigs, UI task), and re-arms a stopped
+sequencer for tracks a mod changed (`sq_rearm`, UI task). A device that
+keeps no key for a track gives `root` `SQ_ROOT_NONE` (0xff) and `scale`
+`SQ_SCALE_NONE` (-2; -1 is chromatic): a mod that needs a key checks
+`root`. The Digitone never gives them.
+
+`examples/dn-euclid` is a whole one: track 1 fires 5 steps of every 16. It
+names no firmware address, so its 1.44 port is empty:
+
+```json
+"subscribe": [{"event": "ev_gen_trig", "fn": "euclid_trig", "order": 50}],
+"requires": ["core", "seq-events"]
+```
+
 ## 3. Path B: a linkable mod
 
 **3.1 Start from the template.** Copy `examples/hello-marker/` to a folder
