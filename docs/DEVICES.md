@@ -197,6 +197,8 @@ below was found again in 1.17.
   From 3.1 (`voices.s`, `params.s`, `menu.s`) it has what machines need: the
   render's voices, the parameter overrides and the Mod Menu's submenus. From
   3.2 (`audio.s`, `midi.s`) it has the exclusive audio and the MIDI CCs.
+  From the next core-dn1 (`fw.s`) it exports more firmware locations: the C library, the
+  text box, the transport, the active pattern and the project.
   1.44 has all of these, at its own addresses (`ports`).
 - **The DDR area** is the Digitakt's, `0x47BE0000-0x47C00000`:
   - The OS clears `0x4028E000-0x43229E60` at start, and its stack runs down

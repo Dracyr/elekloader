@@ -304,12 +304,29 @@ line stays on 2.3.
 | `fw_params`, `fw_uirecs` (3.1) | 0x4018d104, 0x4136b9fc | 0x4018d454, 0x4136c9fc | the parameter records (60 bytes an id) and their UI records (84 bytes an id) |
 | `fw_tempo` (3.2) | 0x40241c94 | 0x40242094 | the tempo the sequencer runs at, x 120 (87.0 BPM: 10440); the timeline moves twice this every block |
 | `fw_font_label`, `fw_font_title` (3.2) | 0x4022eb58, 0x4022dc88 | 0x4022ef58, 0x4022e088 | the stock parameter pages' fonts, for `fw_textf`: their labels (FREQ, RESO; capitals 4 x 5) and their title bar (6 pixels, upper and lower case); `fw_font5` is the 3 x 5 one their value boxes use |
+| `fw_memcpy`, `fw_memset`, `fw_memchr` (next) | 0x400fb864, 0x400fb8ac, 0x4013bfc4 | 0x400fbad8, 0x400fbb20, 0x4013c238 | the firmware's newlib: `memcpy(dst, src, n)`, `memset(p, c, n)`, `memchr(p, c, n)` |
+| `fw_strcmp`, `fw_strncmp`, `fw_strchr`, `fw_strncpy` (next) | 0x4013cb44, 0x4013cffc, 0x4013c9d8, 0x4013d0ec | 0x4013cdb8, 0x4013d270, 0x4013cc4c, 0x4013d360 | and its strings' |
+| `fw_crc32` (next) | 0x4010388c | 0x40103b00 | zlib's `crc32(crc, p, n)` |
+| `__ashldi3`, `__lshrdi3`, `__ashrdi3` (next) | 0x40136ff8, 0x40136fa8, 0x40137048 | 0x4013726c, 0x4013721c, 0x401372bc | libgcc's 64-bit shifts, under their own names (below) |
+| `fw_textbox` (next) | 0x400de0b8 | 0x400de32c | `textbox(bmp, font, x, y, align, deco, template, fmt, ...)`: clears a box as wide as `template`, then draws `fmt` left (0), centred (1) or right (2); what the stock menus draw values with |
+| `fw_transport` (next) | 0x4138e208 | 0x4138f208 | the transport, a long: 0 stopped, 1 playing, 2 paused |
+| `fw_pattern` (next) | 0x4138e214 | 0x4138f214 | -> the active pattern's data: track t at +976 t, its step words at +2 s (bit 0 a note trig, bit 1 a lock trig), NOTE +0x3c0, the per-track length +0x3c5 (big-endian), the keyboard's ROOT +0x3cb and SCALE +0x3ce (`core3.h`'s `FW_TRACK` macros) |
+| `fw_project` (next) | 0x419efde0 | 0x419f0de0 | -> the project |
 
 A name marked 3.1 or 3.2 needs that core-dn1 (`"resources": {"core": "3.1"}`,
-or `"3.2"`).
+or `"3.2"`), and one marked *next* the core-dn1 after 3.2, with its version.
+
+gcc calls libgcc's `__ashldi3`, `__lshrdi3` and `__ashrdi3` for a 64-bit value shifted by a
+variable count, and a mod links no libgcc. From the next core-dn1, core exports the firmware's
+copies under those names, so such calls link with nothing more in the mod. A mod that needs that
+core-dn1 must not define these names itself: every global a mod defines is an export, and the linker refuses two
+exports of one name (*"... both export __ashldi3"*). With an older core, a mod still brings its
+own.
 
 Each 1.44 value was found by the code that uses it, which is the same in
-both versions but for the addresses in it. A routine was found by its own
+both versions but for the addresses in it. The routines marked *next* were also called
+with random arguments on both versions' images, against Python's (`memcpy`
+to `crc32`, 300-2304 calls each). A routine was found by its own
 code and compared to its end; data was found through every piece of code
 that names it. The render's SRAM is where it was, and the RAM moved by
 0x1000. The values are in `mods/core-dn1/mod.json` and its port. The names

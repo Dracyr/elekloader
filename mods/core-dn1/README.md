@@ -117,6 +117,17 @@ the Digitone needs it. On its own it changes nothing the unit does.
   at 0x400ed96e (0x400edbe2 in 1.44), 32 bytes past the router's entry,
   which Tone+FX patches: the two link together, and a CC Tone+FX lets
   through comes to core next.
+- **From the next core-dn1, more firmware locations** ([fw.s](fw.s); docs/ADAPTING.md,
+  "Firmware locations"): the firmware's C library, `fw_memcpy`,
+  `fw_memset`, `fw_memchr`, `fw_strcmp`, `fw_strncmp`, `fw_strchr`,
+  `fw_strncpy` and zlib's `fw_crc32`; libgcc's 64-bit shifts under their
+  own names, `__ashldi3`, `__lshrdi3` and `__ashrdi3`, so gcc's calls link
+  with no libgcc in a mod (which then must not define them); the stock
+  menus' text box, `fw_textbox`;
+  the transport, `fw_transport`; and the active pattern and the project,
+  `fw_pattern` and `fw_project`, with the pattern's layout in core3.h
+  (`FW_TRACK`, `FW_STEP`, `FW_TRACK_NOTE`, ...). Exports only: the code,
+  sites and tables are 3.2's.
 - **OS 1.44:** every site has its port (`ports` in mod.json): the same
   code, moved, and RAM 0x1000 further on.
 
@@ -170,3 +181,12 @@ and channel 12, which no track uses, never reached the site. The site's
 six bytes and the router's exit are the same code in 1.44, 0x274 bytes
 later. Core 3.2 links beside Tone+FX 3.0a, which patches the router's
 entry.
+
+The next core-dn1's exports add no code: its code, sites and tables are
+3.2's, and it keeps all of the released 2.3 (`tests/test_sdk.py`). Each
+new 1.43 and 1.44 value was found by its own code (a routine, its bytes
+with the addresses in them masked, and the routines it calls the same)
+or by every piece of code that names it (data), and the eleven library
+routines were called through the values the built cores export, with
+random arguments on each version's image, against Python: every call
+agreed.

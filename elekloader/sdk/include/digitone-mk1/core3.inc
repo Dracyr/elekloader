@@ -1,10 +1,11 @@
 | SPDX-License-Identifier: GPL-2.0-or-later
-| core-dn1 3.0 to 3.2 for the Digitone mk1, in assembly: the layouts that go
+| core-dn1 3.0 to 3.2 and the next for the Digitone mk1, in assembly: the layouts that go
 | with the firmware locations core exports (core3.h has the same in C).
 | Assembly names the locations directly: fw_voice_pitch, fw_kit, fw_fillrect,
 | ... A mod that uses them needs core-dn1 3.0: "resources": {"core": "3.0"};
 | one that uses a 3.1 name (fw_voices, core_sound_set, ...) needs 3.1, and a
-| 3.2 one (fw_tempo, core_audio, ev_midi_cc) 3.2.
+| 3.2 one (fw_tempo, core_audio, ev_midi_cc) 3.2, and one of the next
+| core-dn1's (fw_memcpy, fw_textbox, fw_pattern, __ashldi3, ...) that one.
 | The SDK puts this folder on the include path:
 |
 |       .include "digitone-mk1/core3.inc"
@@ -29,3 +30,11 @@
         .equ    CORE_AUDIO_FLAGS,  8
         .equ    CORE_AUDIO_MUTE_VOICES, 1        | skip the voices' filters too
         .equ    CORE_MIDI_CC_AUTO, 1             | ev_midi_cc's flags: on the auto channel
+| next: the active pattern (fw_pattern)
+        .equ    FW_TRACK_STRIDE,  976           | (fw_pattern) + 976 t: track t's data
+        .equ    FW_STEP_TRIG,     1             | its step words (+2 s): a note trig
+        .equ    FW_STEP_LOCK_TRIG, 2            | a lock trig
+        .equ    FW_TRACK_NOTE,    0x3c0         | NOTE
+        .equ    FW_TRACK_LENGTH,  0x3c5         | the per-track length, big-endian, unaligned
+        .equ    FW_TRACK_ROOT,    0x3cb         | the keyboard's ROOT
+        .equ    FW_TRACK_SCALE,   0x3ce         | its SCALE, -1 chromatic
