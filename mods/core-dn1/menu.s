@@ -22,6 +22,11 @@
 | pick(brain, event, track, index), which a pick calls in place of the
 | entry's open(); the menu closes first, so pick may open another list.
 | Holding a track key opens the menu at its root, as before.
+| From the next core-dn1 a mod may open it from its own key handler: core_menu_show(track)
+| opens the root as the hold does, for track 0-3 (the track an entry's
+| open() gets), and returns 1, or 0 when no mod contributed an entry. A
+| track key's hold under way then counts no more, so the hold that follows
+| the key the mod took does not close the menu again.
 | In the menu: the arrows or any knob move, YES or trig key N picks, NO or
 | holding a track key again closes, a page key (TRIG ... LFO) closes and
 | goes on to its page; PLAY, STOP, FUNC and the track keys still work.
@@ -132,19 +137,10 @@ core_dn_key:
         tst.l   %d0
         beq.s   7b
         bra.s   taken
-8:      bsr.w   menu_root               | then the menu, from its root,
-        bsr.w   menu_count              | if there is one
+8:      move.l  %d3, %d1                | then the menu, from its root,
+        bsr.w   show_root               | if there is one
         tst.l   %d0
         beq.s   pass
-        moveq   #0, %d1
-        move.b  menu_sel, %d1
-        cmp.l   %d0, %d1
-        bcs.s   9f
-        clr.b   menu_sel
-9:      move.b  %d3, menu_track
-        clr.l   enc_acc
-        moveq   #1, %d0
-        move.b  %d0, menu_open
 taken:  movem.l (%sp), %d2-%d3/%a2
         lea     12(%sp), %sp
         moveq   #1, %d0
@@ -197,6 +193,37 @@ menu_root:
         move.b  %d0, menu_sel
         clr.b   menu_top
 1:      rts
+
+| show_root: d1 = a track (0-3): the menu opens at its root for it -> d0 1,
+| or 0 when core_menu is empty (nothing opens). Changes d0, d1 and a0.
+show_root:
+        bsr.s   menu_root
+        bsr.w   menu_count
+        tst.l   %d0
+        beq.s   2f
+        move.b  %d1, menu_track
+        moveq   #0, %d1
+        move.b  menu_sel, %d1
+        cmp.l   %d0, %d1
+        bcs.s   1f
+        clr.b   menu_sel
+1:      clr.l   enc_acc
+        moveq   #1, %d0
+        move.b  %d0, menu_open
+2:      rts
+
+| core_menu_show(track) -> 1, or 0 (above). C convention, from the UI task:
+| an ev_key handler, or an entry's open() (back to the root).
+        .globl  core_menu_show
+core_menu_show:
+        move.l  4(%sp), %d1
+        moveq   #3, %d0
+        cmp.l   %d0, %d1
+        bhi.s   1f                      | not a synth track: nothing
+        clr.b   held
+        bra.s   show_root
+1:      moveq   #0, %d0
+        rts
 
 | core_menu_open(list, sel, pick): the menu shows another list (above). C
 | convention, from the UI task (an entry's open()).

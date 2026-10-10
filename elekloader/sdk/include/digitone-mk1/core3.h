@@ -9,7 +9,7 @@
  * Every fw_ name here is resolved by the linker against the core in the build, so a mod that uses only
  * these rebuilds for another OS version without a change (its port in mod.json is empty). Declaring one
  * makes the mod need core-dn1 3.0, or 3.1 or 3.2 for the names marked so: say so with "resources":
- * {"core": "3.0"} (or "3.1", "3.2"). digitone-mk1/core3.inc has the same for assembly. Functions that return a pointer
+ * {"core": "3.0"} (or "3.1", "3.2"); core_menu_show needs the next core-dn1. digitone-mk1/core3.inc has the same for assembly. Functions that return a pointer
  * are declared to return uint32_t: the firmware returns it in d0, where gcc for m68k looks in a0. */
 #ifndef ELEKLOADER_DIGITONE_MK1_CORE3_H
 #define ELEKLOADER_DIGITONE_MK1_CORE3_H
@@ -140,6 +140,12 @@ struct core_menu_item {             /* core_menu: the Mod Menu's entries */
  * in place of the entry's open(), the menu closed first (so pick may open another list). */
 extern void core_menu_open(const void *const *list, int32_t sel,
                            void (*pick)(void *brain, void *event, int32_t track, int32_t index));
+
+/* The next core-dn1: open the Mod Menu at its root, as holding a track key does, from the UI task: an ev_key handler
+ * (which then returns nonzero: the key is taken) or an entry's open(). track 0-3: the one an entry's
+ * open() gets. A track key's hold under way counts no more. -> 1, or 0 (nothing opens) when no mod
+ * contributed an entry or track is not 0-3. */
+extern int32_t core_menu_show(int32_t track);
 
 /* core_param_override: a mod answering for a stock parameter, while it wants to (from 3.1). ui returns a UI
  * record (84 bytes, the stock layout: the value text's formatter at +0x14, the knob graphic) or 0 for

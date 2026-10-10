@@ -558,6 +558,19 @@ root, so `pick` may open another list. NO closes a submenu like the menu, and
 holding a track key always opens the root. The machines mod's MACHINES
 entry opens one (below).
 
+**Opening the menu from a mod (the next core-dn1).** `int core_menu_show(int
+track)` opens the menu at its root, as the hold does, for `track` (0-3, the
+one an entry's `open()` gets). Call it from the UI task: an `ev_key`
+handler, which then returns nonzero so the key goes no further, or an
+entry's `open()`, to go back to the root. It returns 1, or 0 when no mod
+contributed an entry or `track` is not 0-3 (nothing opens). A hold of a
+track key under way counts no more, so a mod that opens the menu on a track
+key's press does not see the hold that follows close it. A mod with a mode
+of its own on the track keys (a performance mode, say) can give the menu a
+key or a combination of its choosing instead of the hold, which it may then
+take from `ev_hold` for its own use. A mod that calls it needs the core-dn1 that
+exports it (its `"resources"` value is the maintainers' to set with the version).
+
 ### Machines and stock parameters (core-dn1 3.1, Digitone mk1)
 
 On the Digitone mk1 the DSP (a second ColdFire) renders the eight FM voices,

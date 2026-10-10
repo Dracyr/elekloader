@@ -117,6 +117,11 @@ the Digitone needs it. On its own it changes nothing the unit does.
   at 0x400ed96e (0x400edbe2 in 1.44), 32 bytes past the router's entry,
   which Tone+FX patches: the two link together, and a CC Tone+FX lets
   through comes to core next.
+- **From the next core-dn1, `core_menu_show(track)`** ([menu.s](menu.s)): a mod opens
+  the Mod Menu at its root from its own key handler (or an entry's
+  open()), as the hold does; it returns 0 when there is nothing to show. A
+  hold under way counts no more. It adds no site, table or firmware
+  location: the hold's code now calls the same routine.
 - **OS 1.44:** every site has its port (`ports` in mod.json): the same
   code, moved, and RAM 0x1000 further on.
 

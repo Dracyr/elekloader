@@ -418,8 +418,8 @@ def test_digitone_core_builds_and_links():
                 'core_view_init', 'core_page_open', 'core_page_shown', 'core_proj_save',
                 'core_proj_load', 'core_proj_import', 'core_proj_new',
                 'core_proj_init', 'core_dn_key', 'core_dn_enc', 'core_dn_tick',
-                'core_dn_draw', 'core_menu_open', 'core_param_short', 'core_param_ui_make',
-                'core_sound_set', 'core_render_voices', 'core_voices_gate',
+                'core_dn_draw', 'core_menu_open', 'core_menu_show', 'core_param_short',
+                'core_param_ui_make', 'core_sound_set', 'core_render_voices', 'core_voices_gate',
                 'core_render_master', 'core_midi_cc'} <= set(placed) - set(shared)
         # voice.s follows core.s's code in .run.
         last = max(off for sec, off in shared.values() if sec == '.run')
@@ -445,7 +445,7 @@ FW_DN = ['fw_active_track', 'fw_blit', 'fw_ev_alloc', 'fw_ev_free', 'fw_ev_queue
          'fw_lock_alloc', 'fw_locks_free', 'fw_nodes_free', 'fw_op_new', 'fw_params', 'fw_slot_ids',
          'fw_str_amp', 'fw_str_empty', 'fw_textf', 'fw_timeline', 'fw_transpose', 'fw_uirecs',
          'fw_tempo', 'fw_font_label', 'fw_font_title', 'fw_voice_len', 'fw_voice_params', 'fw_voice_pitch', 'fw_voice_track', 'fw_voices']
-CORE_DN3 = ['core_menu_open', 'core_midi_cc', 'core_param_short', 'core_param_ui_make', 'core_render_master',
+CORE_DN3 = ['core_menu_open', 'core_menu_show', 'core_midi_cc', 'core_param_short', 'core_param_ui_make', 'core_render_master',
             'core_render_voices', 'core_sound_set', 'core_voices_gate']
 
 
@@ -453,8 +453,8 @@ def check_dn_superset(old_path, new_path):
     """core-dn1 3.2 keeps all of 2.3: its sites, tables, contributions,
     resources and exports, and every symbol in the same section; it adds
     the firmware exports, the machines' hooks (3.1: two sites, two tables),
-    exclusive audio and the MIDI CCs (3.2: three sites, two tables) and
-    their calls."""
+    exclusive audio and the MIDI CCs (3.2: three sites, two tables), the
+    Mod Menu from a mod (core_menu_show) and their calls."""
     with open(old_path) as fh:
         old = json.load(fh)
     with open(new_path) as fh:
