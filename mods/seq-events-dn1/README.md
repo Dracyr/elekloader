@@ -38,7 +38,7 @@ header, `digitone-mk1/seq.h`, which gives the sizes and includes it.
 Tracks are the audio tracks first (`SQ_AUDIO`, the Digitone's four synth
 tracks), then the MIDI tracks (`SQ_TRACKS` in all); a step plays up to
 `SQ_NOTES` notes (8) and locks slots below `SQ_SLOTS` (79). The Digitakt
-mk1's port is being added on the same terms.
+mk1's is [../seq-events-dt1](../seq-events-dt1/README.md), on the same terms.
 
 | stage | handler | runs |
 |---|---|---|

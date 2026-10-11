@@ -932,19 +932,28 @@ glide with it.
 With no handler each site costs a test and a jump: the stock call runs as
 it was, by a tail jump with the stack as it came.
 
-### Step-fire events (seq-events, Digitone mk1)
+### Step-fire events (seq-events, Digitone mk1 and Digitakt mk1)
 
 Mods that change what the sequencer plays (rhythm and melody generators,
 performance effects) need the same instructions of the step fire, and two
-mods may not patch one site. The `seq-events` mod (`mods/seq-events-dn1`)
-owns the fire's sites, audio and MIDI tracks, once, and offers each stage of
+mods may not patch one site. The `seq-events` mod (`mods/seq-events-dn1` on
+the Digitone mk1, `mods/seq-events-dt1` on the Digitakt mk1) owns the fire's sites, audio and MIDI tracks, once, and offers each stage of
 it as tables mods subscribe to. The names are one set for every device
 seq-events serves (`seq-events.h`); a mod includes its device's header,
-`digitone-mk1/seq.h`, which gives the sizes and includes it (the Digitakt
-mk1's is being added). Every handler runs at interrupt level, in the fire:
-keep it short and call no firmware. `track` counts the audio tracks first
-(`SQ_AUDIO`: on the Digitone 0-3, its synth tracks), then the MIDI tracks
-(`SQ_TRACKS` in all: 4-7).
+`digitone-mk1/seq.h` or `digitakt-mk1/seq.h`, which gives the sizes and
+includes it. Every handler runs at interrupt level, in the fire: keep it
+short and call no firmware. `track` counts the audio tracks first
+(`SQ_AUDIO`: the Digitone's 0-3, its synth tracks; the Digitakt's 0-7), then
+the MIDI tracks (`SQ_TRACKS` in all: 4-7; 8-15).
+
+| | Digitone mk1 | Digitakt mk1 |
+|---|---|---|
+| `SQ_AUDIO`, `SQ_TRACKS` | 4, 8 | 8, 16 |
+| `SQ_NOTES` | 8 | 4; an audio track plays `notes[0]` only |
+| `SQ_SLOTS` | 79 | 53 |
+| `SQ_TRIG`, `SQ_LOCK` | the step word's bits 0 and 1 | bit 0 with the SYN trig on, and without (FUNC + trig's lock trig) |
+| the key (`sq_track_info`) | the keyboard's ROOT and SCALE | none: `SQ_ROOT_NONE`, `SQ_SCALE_NONE` |
+| a limit | | a step word with 0x0004 set never fires, whatever a handler answers |
 
 | event | prototype | |
 |---|---|---|
@@ -973,10 +982,11 @@ its length, the master length, NOTE, the keyboard's ROOT and SCALE;
 sequencer for tracks a mod changed (`sq_rearm`, UI task). A device that
 keeps no key for a track gives `root` `SQ_ROOT_NONE` (0xff) and `scale`
 `SQ_SCALE_NONE` (-2; -1 is chromatic): a mod that needs a key checks
-`root`. The Digitone never gives them.
+`root`. The Digitone never gives them; the Digitakt always does.
 
-`examples/dn-euclid` is a whole one: track 1 fires 5 steps of every 16. It
-names no firmware address, so its 1.44 port is empty:
+`examples/dn-euclid` (Digitone) and `examples/euclid` (Digitakt) are a whole
+one: track 1 fires 5 steps of every 16, the same C with the device's header.
+It names no firmware address, so its port (1.44, 1.54) is empty:
 
 ```json
 "subscribe": [{"event": "ev_gen_trig", "fn": "euclid_trig", "order": 50}],

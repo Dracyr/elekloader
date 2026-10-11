@@ -964,6 +964,49 @@ def test_seq_events_builds_and_links():
             assert images[0] == images[1] and e.relocs == e4.relocs
 
 
+def test_seq_events_dt1_builds_and_links():
+    """mods/seq-events-dt1 and examples/euclid: the Digitakt mk1's seq-events
+    patches the step fire's 15 sites, at the same addresses with the same
+    stock bytes in 1.53 and 1.54, declares the eight event tables and needs
+    only the hook bus, so it links with core 2.1 as with 3.0, and beside
+    machine-pages (no site in common). EUCLID is the Digitone's C with the
+    Digitakt's header: it patches nothing and names no firmware address."""
+    st = stock()
+    tc = devices.devices()[0].toolchain
+    if not shutil.which(os.environ.get('ELEKLOADER_CROSS', tc['prefix']) + 'gcc'):
+        raise Skip('no m68k cross compiler')
+    tables = {'ev_fire_step', 'ev_gen_trig', 'ev_fire_trig', 'ev_fire_cond', 'ev_gen_notes',
+              'ev_fire_notes', 'ev_fire_vel', 'ev_fire_locks'}
+    with tempfile.TemporaryDirectory() as tmp:
+        qpath, q = build.build(os.path.join(ROOT, 'mods', 'seq-events-dt1'), st, tmp)
+        epath, e = build.build(os.path.join(ROOT, 'examples', 'euclid'), st, tmp)
+        assert os.path.basename(qpath) == 'seq-events-0.1.elemod'
+        assert len(q.sites) == 15 and set(q.imports) == tables, q.imports
+        assert os.path.basename(epath) == 'euclid-1.0.elemod'
+        assert not e.sites and not e.imports, e.imports
+        rc, r = lint_json(epath, '--stock', st, '--with', built_core(), '--with', qpath)
+        assert rc == 0, r['problems']
+        assert r['link']['order'] == ['core 3.0', 'euclid 1.0', 'seq-events 0.1']
+        mpath, _m = build.build(os.path.join(ROOT, 'mods', 'machine-pages'), st, tmp)
+        rc, r = lint_json(qpath, '--stock', st, '--with', built_core(), '--with', mpath)
+        assert rc == 0, r['problems']
+        if CORE_21 and os.path.exists(CORE_21):
+            rc, r = lint_json(qpath, '--stock', st, '--with', CORE_21)
+            assert rc == 0, r['problems']
+        if STOCK_154 and os.path.exists(STOCK_154):
+            qpath4, q4 = build.build(os.path.join(ROOT, 'mods', 'seq-events-dt1'), STOCK_154, tmp)
+            path4, e4 = build.build(os.path.join(ROOT, 'examples', 'euclid'), STOCK_154, tmp)
+            assert qpath4.endswith('seq-events-0.1-os1.54.elemod')
+            assert [(x['addr'], x['stock_sha256']) for x in q.sites] == \
+                [(x['addr'], x['stock_sha256']) for x in q4.sites]
+            images = []
+            for stf, x in ((st, e), (STOCK_154, e4)):
+                sd, dv, _rel = formats.load(stf)
+                images.append(bytes(elemod.parts_bytes(x.sections['.run']['parts'],
+                                                       formats.main_image(sd, dv), dv)))
+            assert images[0] == images[1] and e.relocs == e4.relocs
+
+
 def test_example_builds_and_links():
     tc = devices.devices()[0].toolchain
     if not shutil.which(os.environ.get('ELEKLOADER_CROSS', tc['prefix']) + 'gcc'):
